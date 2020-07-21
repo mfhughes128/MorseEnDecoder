@@ -287,7 +287,8 @@ boolean morseEncoder::available()
   if (sendingMorse) return false; else return true;
 }
 
-void morseEncoder::setmillis(long (*ms)()) {
+void morseEncoder::setmillis(unsigned long (*ms)())
+{
     this->millis = ms;
 }
 

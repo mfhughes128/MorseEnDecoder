@@ -56,7 +56,7 @@ class morseEncoder
     void setspeed(int value);
     void write(char temp);
     boolean available();
-    void setmillis(long (*millis)());
+    void setmillis(unsigned long (*millis)());
     int morseSignals;       // nr of morse signals to send in one morse character
     char morseSignalString[7];// Morse signal for one character as temporary ASCII string of dots and dashes
   private:
@@ -71,9 +71,8 @@ class morseEncoder
     long sendMorseTimer;
     long lastDebounceTime;
     long currentTime;
-
-    long (*millis)();
- protected:
+    unsigned long (*millis)();
+  protected:
     int morseOutPin;
     virtual void setup_signal();
     virtual void start_signal(bool startOfChar, char signalType);
