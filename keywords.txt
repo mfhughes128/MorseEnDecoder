@@ -8,6 +8,7 @@
 
 morseDecoder	KEYWORD1
 morseEncoder	KEYWORD1
+morseSpeaker	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -19,6 +20,8 @@ read	KEYWORD2
 write	KEYWORD2
 available	KEYWORD2
 setmillis	KEYWORD2
+encodeTone	KEYWORD2
+decodeTone	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

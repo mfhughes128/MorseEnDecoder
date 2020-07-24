@@ -65,10 +65,10 @@
 */ 
 
 #include "MorseEnDecoder.h"
+#include "Pitches.h"
 
 
 // Morse code binary tree table (dichotomic search table)
-
 // ITU with most punctuation (but without non-english characters - for now)
 const int morseTreeLevels = 6; // Minus top level, also the max nr. of morse signals
 const int morseTableLength = pow(2,morseTreeLevels+1);
@@ -115,7 +115,6 @@ morseDecoder::morseDecoder(int decodePin, boolean listenAudio, boolean morsePull
 }
 
 
-
 void morseDecoder::setspeed(int value)
 {
   wpm = value;
@@ -126,12 +125,10 @@ void morseDecoder::setspeed(int value)
 }
 
 
-
 boolean morseDecoder::available()
 {
   if (decodedMorseChar) return true; else return false;
 }
-
 
 
 char morseDecoder::read()
@@ -140,7 +137,6 @@ char morseDecoder::read()
   decodedMorseChar = '\0';
   return temp;
 }
-
 
 
 void morseDecoder::decode()
@@ -190,8 +186,6 @@ void morseDecoder::decode()
     }
   }
   
-
-
   // Decode morse code
   if (!morseSignalState)
   {
@@ -271,7 +265,6 @@ morseEncoder::morseEncoder(int encodePin)
 }
 
 
-
 void morseEncoder::setspeed(int value)
 {
   wpm = value;
@@ -286,6 +279,7 @@ boolean morseEncoder::available()
 {
   if (sendingMorse) return false; else return true;
 }
+
 
 void morseEncoder::setmillis(unsigned long (*ms)())
 {
@@ -316,7 +310,6 @@ void morseEncoder::stop_signal(bool endOfChar, char signalType)
 {
   digitalWrite(morseOutPin, LOW);
 }
-
 
 
 void morseEncoder::encode()
@@ -364,14 +357,12 @@ void morseEncoder::encode()
     
     morseSignalString[morseSignals] = '\0';
 
-
     // start sending the the character
     sendingMorse = true;
     sendingMorseSignalNr = morseSignals; // Sending signal string backwards
     sendMorseTimer = currentTime;
     if (morseSignalString[0] != ' ') this->start_signal(true, morseSignalString[morseSignals-1]);
   }
-
 
   // Send Morse signals to output
   if (sendingMorse)
@@ -427,17 +418,3 @@ void morseEncoder::encode()
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

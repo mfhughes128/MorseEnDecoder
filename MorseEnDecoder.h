@@ -46,8 +46,6 @@ class morseDecoder
 };
 
 
-
-
 class morseEncoder
 {
   public:
@@ -79,7 +77,4 @@ class morseEncoder
     virtual void stop_signal(bool endOfChar, char signalType);
 };
 
-
 #endif
-
-

@@ -18,15 +18,19 @@
 #include <MorseEnDecoder.h>
 
 // Pin mapping
-const byte morseInPin = 7;      
-const byte morseOutPin = 13;
+const byte morseInPin = 2;
+const byte morseOutPin = 12;
+const byte morseSpkrPin = 11;
 
 // Instantiate Morse objects
 morseDecoder morseInput(morseInPin, MORSE_KEYER, MORSE_ACTIVE_LOW);
 morseEncoder morseOutput(morseOutPin);
+morseSpeaker morseSound(morseSpkrPin);
+
 
 void setup()
 {
+  // Setup serial communication
   Serial.begin(9600);
   Serial.println("Morse EnDecoder barebones demo");
   
@@ -34,6 +38,10 @@ void setup()
   // If not set, 13 wpm is default anyway
   morseInput.setspeed(13);
   morseOutput.setspeed(13);
+
+  // Enable encode and decode tone output
+  morseSound.decodeSpkrOn = true;
+  morseSound.encodeSpkrOn = true;
 }
 
 
@@ -64,4 +72,3 @@ void loop()
   }
 
 }
-
