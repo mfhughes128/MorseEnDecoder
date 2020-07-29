@@ -15,18 +15,18 @@ Copyright (C) 2010, 2012 raron
 // Pin mapping
 const byte morseSpkrPin = 11;
 
-typedef void (morseSpeaker::*SpkrFunc)(boolean start);
-SpkrFunc outTone = &morseSpeaker::outputTone;
-SpkrFunc sideTone = &morseSpeaker::sideTone;
+typedef void (MorseSpeaker::*SpkrFunc)(boolean start);
+SpkrFunc outTone = &MorseSpeaker::outputTone;
+SpkrFunc sideTone = &MorseSpeaker::sideTone;
 
 // Instantiate speaker object
-morseSpeaker morseSound(morseSpkrPin);
+MorseSpeaker MorseSound(morseSpkrPin);
 
 void setup()
 {
 	// Enable encode and decode output
-	morseSound.sideToneOn = true;
-	morseSound.outputToneOn = true;
+	MorseSound.sideToneOn = true;
+	MorseSound.outputToneOn = true;
 }
 
 void loop()
@@ -36,7 +36,7 @@ void loop()
   // Sound Morse Output tone
   playTone(1000, outTone);
 	
-	delay(1500);
+	delay(1000);
 
   // Sound Morse sidetone
   playTone(1000, sideTone);
@@ -45,7 +45,7 @@ void loop()
 void playTone(int duration, SpkrFunc func)
 {
   int ttp = duration;
-  (morseSound.*func)(true);
+  (MorseSound.*func)(true);
   delay(ttp);
-  (morseSound.*func)(false);
+  (MorseSound.*func)(false);
 }

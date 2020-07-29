@@ -1,11 +1,8 @@
 #ifndef MorseEnDecoder_H
 #define MorseEnDecoder_H
 
-#if (ARDUINO <  100)
-#include <WProgram.h>
-#else
 #include <Arduino.h>
-#endif
+#include "MorseIO.h"
 
 #define MORSE_AUDIO true
 #define MORSE_KEYER false
@@ -13,12 +10,12 @@
 #define MORSE_ACTIVE_HIGH false
 
 
-class morseDecoder
+class MorseDecoder
 {
   public:
-    morseDecoder(int decodePin, boolean listenAudio, boolean morsePullup);
+    MorseDecoder(int, boolean, boolean);
     void decode();
-    void setspeed(int value);
+    void setspeed(int);
     char read();
     boolean available();
     int AudioThreshold;
@@ -46,35 +43,30 @@ class morseDecoder
 };
 
 
-class morseEncoder
+class MorseEncoder
 {
   public:
-    morseEncoder(int encodePin);
+    MorseEncoder(MorseOut *);
     void encode();
-    void setspeed(int value);
-    void write(char temp);
+    void setspeed(int);
+    void write(char);
     boolean available();
     void setmillis(unsigned long (*millis)());
-    int morseSignals;       // nr of morse signals to send in one morse character
+    int morseSignals;         // nr of morse signals to send in one morse character
     char morseSignalString[7];// Morse signal for one character as temporary ASCII string of dots and dashes
   private:
-    char encodeMorseChar;   // ASCII character to encode
-    boolean sendingMorse;
-    int wpm;                // Word-per-minute speed
-    long dotTime;           // morse dot time length in ms
+    MorseOut *MorseIO_p;     // Pointer to output handler
+    char encodeMorseChar;    // ASCII character to encode
+    boolean sendingMorse;    // Flag indicating sending is in process
+    int wpm;                 // Word-per-minute speed
+    long dotTime;            // morse dot time length in ms
     long dashTime;
     long wordSpace;
     int morseSignalPos;
     int sendingMorseSignalNr;
     long sendMorseTimer;
-    long lastDebounceTime;
     long currentTime;
     unsigned long (*millis)();
-  protected:
-    int morseOutPin;
-    virtual void setup_signal();
-    virtual void start_signal(bool startOfChar, char signalType);
-    virtual void stop_signal(bool endOfChar, char signalType);
 };
 
 #endif

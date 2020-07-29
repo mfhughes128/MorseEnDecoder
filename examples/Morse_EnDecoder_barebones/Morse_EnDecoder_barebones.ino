@@ -16,16 +16,19 @@
 
 #include <avr/pgmspace.h>
 #include <MorseEnDecoder.h>
+#include <MorseIO.h>
 
 // Pin mapping
 const byte morseInPin = 2;
-const byte morseOutPin = 12;
 const byte morseSpkrPin = 11;
 
-// Instantiate Morse objects
-morseDecoder morseInput(morseInPin, MORSE_KEYER, MORSE_ACTIVE_LOW);
-morseEncoder morseOutput(morseOutPin);
-morseSpeaker morseSound(morseSpkrPin);
+// Configure I/O
+MorseSpeaker Spkr(morseSpkrPin);
+MorseOutTone Mout(&Spkr);
+
+// Instantiate Morse encoder and decoder
+MorseDecoder MorseInput(morseInPin, MORSE_KEYER, MORSE_ACTIVE_LOW);
+MorseEncoder MorseOutput(&Mout);
 
 
 void setup()
@@ -34,37 +37,35 @@ void setup()
   Serial.begin(9600);
   Serial.println("Morse EnDecoder barebones demo");
   
-  // Setting Morse speed in wpm - words per minute
-  // If not set, 13 wpm is default anyway
-  morseInput.setspeed(13);
-  morseOutput.setspeed(13);
+  // Setting Morse speed in words per minute (wpm). Default is 13 wpm
+  MorseInput.setspeed(13);
+  MorseOutput.setspeed(13);
 
   // Enable encode and decode tone output
-  morseSound.decodeSpkrOn = true;
-  morseSound.encodeSpkrOn = true;
+  Spkr.outputToneOn = true;
 }
 
 
 void loop()
 {
   // Need to call these once per loop
-  morseInput.decode();
-  morseOutput.encode();
+  MorseInput.decode();
+  MorseOutput.encode();
 
   // SEND MORSE (OUTPUT)
   // Encode and send text received from the serial port (serial monitor)
-  if (Serial.available() && morseOutput.available())
+  if (Serial.available() && MorseOutput.available())
   {
     // Get character from serial and send as Morse code
     char sendMorse = Serial.read();
-    morseOutput.write(sendMorse);
+    MorseOutput.write(sendMorse);
   }
 
   // RECEIVE MORSE (INPUT)
   // If a character is decoded from the input, write it to serial port
-  if (morseInput.available())
+  if (MorseInput.available())
   {
-    char receivedMorse = morseInput.read();
+    char receivedMorse = MorseInput.read();
     Serial.print(receivedMorse);
     
     // A little error checking    

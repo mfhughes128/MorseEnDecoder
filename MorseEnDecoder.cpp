@@ -65,11 +65,13 @@
 */ 
 
 #include "MorseEnDecoder.h"
+#include "MorseIO.h"
 #include "Pitches.h"
 
-
-// Morse code binary tree table (dichotomic search table)
-// ITU with most punctuation (but without non-english characters - for now)
+/*
+  Morse code binary tree table (dichotomic search table)
+  ITU with most punctuation (but without non-english characters - for now)
+*/
 const int morseTreeLevels = 6; // Minus top level, also the max nr. of morse signals
 const int morseTableLength = pow(2,morseTreeLevels+1);
 const char morseTable[] PROGMEM = 
@@ -79,16 +81,24 @@ const char morseTable[] PROGMEM =
 
 
 
-morseDecoder::morseDecoder(int decodePin, boolean listenAudio, boolean morsePullup)
+/*
+  Morse Decoder Class
+    - decode
+    - setspeed
+    - read
+    - available
+*/
+MorseDecoder::MorseDecoder(int decodePin, boolean listenAudio, boolean morsePullup)
 {
   morseInPin = decodePin;
   morseAudio = listenAudio;
   activeLow = morsePullup;
 
-  if (morseAudio == false)
-  {
+  if (morseAudio == false) {
     pinMode(morseInPin, INPUT);
-    if (activeLow) digitalWrite (morseInPin, HIGH);
+    if (activeLow) {
+      digitalWrite (morseInPin, HIGH);
+    }
   }
 
   // Some initial values  
@@ -115,23 +125,29 @@ morseDecoder::morseDecoder(int decodePin, boolean listenAudio, boolean morsePull
 }
 
 
-void morseDecoder::setspeed(int value)
+void MorseDecoder::setspeed(int value)
 {
   wpm = value;
-  if (wpm <= 0) wpm = 1;
+  if (wpm <= 0) {
+    wpm = 1;
+  }
   dotTime = 1200 / wpm;
   dashTime = 3 * 1200 / wpm;
   wordSpace = 7 * 1200 / wpm;
 }
 
 
-boolean morseDecoder::available()
+boolean MorseDecoder::available()
 {
-  if (decodedMorseChar) return true; else return false;
+  if (decodedMorseChar) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
-char morseDecoder::read()
+char MorseDecoder::read()
 {
   char temp = decodedMorseChar;
   decodedMorseChar = '\0';
@@ -139,19 +155,18 @@ char morseDecoder::read()
 }
 
 
-void morseDecoder::decode()
+void MorseDecoder::decode()
 {
   currentTime = millis();
   
   // Read Morse signals
-  if (morseAudio == false)
-  {
-    // Read the Morse keyer (digital)
+  if (morseAudio == false) {
+    // Read the Morse key input (digital)
     morseKeyer = digitalRead(morseInPin);
     if (activeLow) morseKeyer = !morseKeyer;
 
-    // If the switch changed, due to noise or pressing:
-    if (morseKeyer != lastKeyerState) lastDebounceTime = currentTime; // reset timer
+    // If the switch changed, due to noise or pressing, reset the debounce timer
+    if (morseKeyer != lastKeyerState) lastDebounceTime = currentTime;
   
     // debounce the morse keyer
     if ((currentTime - lastDebounceTime) > debounceDelay)
@@ -247,25 +262,29 @@ void morseDecoder::decode()
 
 
 
-morseEncoder::morseEncoder(int encodePin)
+/*
+  MorseEncoder Class:
+    - encode
+    - setspeed
+    - write
+    - available
+    - setmillis
+*/
+MorseEncoder::MorseEncoder(MorseOut *t_MorseOut_p)
 {
-  morseOutPin = encodePin;
-  this->millis = ::millis;
-  this->setup_signal();
-
-  // some initial values
-  sendingMorse = false;
-  encodeMorseChar = '\0';
+  millis = ::millis;  // Init timer function to default
+  MorseIO_p = t_MorseOut_p;  // Set output function
 
   wpm = 13;
   dotTime = 1200 / wpm;       // morse dot time length in ms
   dashTime = 3 * 1200 / wpm;
   wordSpace = 7 * 1200 / wpm;
  
+  sendingMorse = false;
+  encodeMorseChar = '\0';
 }
 
-
-void morseEncoder::setspeed(int value)
+void MorseEncoder::setspeed(int value)
 {
   wpm = value;
   if (wpm <= 0) wpm = 1;
@@ -274,45 +293,22 @@ void morseEncoder::setspeed(int value)
   wordSpace = 7 * 1200 / wpm;
 }
 
-
-boolean morseEncoder::available()
+boolean MorseEncoder::available()
 {
   if (sendingMorse) return false; else return true;
 }
 
-
-void morseEncoder::setmillis(unsigned long (*ms)())
+void MorseEncoder::setmillis(unsigned long (*ms)())
 {
     this->millis = ms;
 }
 
-
-void morseEncoder::write(char temp)
+void MorseEncoder::write(char temp)
 {
   if (!sendingMorse && temp != '*') encodeMorseChar = temp;
 }
 
-
-void morseEncoder::setup_signal()
-{
-  pinMode(morseOutPin, OUTPUT);
-  digitalWrite(morseOutPin, LOW);
-}
-
-
-void morseEncoder::start_signal(bool startOfChar, char signalType)
-{
-  digitalWrite(morseOutPin, HIGH);
-}
-
-
-void morseEncoder::stop_signal(bool endOfChar, char signalType)
-{
-  digitalWrite(morseOutPin, LOW);
-}
-
-
-void morseEncoder::encode()
+void MorseEncoder::encode()
 {
   currentTime = this->millis();
 
@@ -361,7 +357,10 @@ void morseEncoder::encode()
     sendingMorse = true;
     sendingMorseSignalNr = morseSignals; // Sending signal string backwards
     sendMorseTimer = currentTime;
-    if (morseSignalString[0] != ' ') this->start_signal(true, morseSignalString[morseSignals-1]);
+    if (morseSignalString[0] != ' ') {
+		// Assert morse output
+		MorseIO_p->keyDown();
+	}
   }
 
   // Send Morse signals to output
@@ -374,7 +373,8 @@ void morseEncoder::encode()
       case '.': // Send a dot (actually, stop sending a signal after a "dot time")
         if (currentTime - sendMorseTimer >= dotTime)
         {
-          this->stop_signal(endOfChar, currSignalType);
+		  // Deassert morse output and mark signal done
+          MorseIO_p->keyUp();
           sendMorseTimer = currentTime;
           currSignalType = 'x'; // Mark the signal as sent
         }
@@ -382,7 +382,8 @@ void morseEncoder::encode()
       case '-': // Send a dash (same here, stop sending after a dash worth of time)
         if (currentTime - sendMorseTimer >= dashTime)
         {
-          this->stop_signal(endOfChar, currSignalType);
+		  // Deassert morse output and mark signal done
+          MorseIO_p->keyUp();
           sendMorseTimer = currentTime;
           currSignalType = 'x'; // Mark the signal as sent
         }
@@ -394,7 +395,7 @@ void morseEncoder::encode()
           if (currentTime - sendMorseTimer >= dotTime)
           {
             sendingMorseSignalNr--;
-            this->start_signal(false, morseSignalString[sendingMorseSignalNr-1]); // Start sending the next signal
+            MorseIO_p->keyDown(); // Start sending the next signal
             sendMorseTimer = currentTime;       // reset the timer
           }
         } else {

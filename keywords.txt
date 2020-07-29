@@ -6,9 +6,9 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-morseDecoder	KEYWORD1
-morseEncoder	KEYWORD1
-morseSpeaker	KEYWORD1
+MorseDecoder	KEYWORD1
+MorseEncoder	KEYWORD1
+MorseSpeaker	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
