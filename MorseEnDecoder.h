@@ -10,39 +10,46 @@
 #define MORSE_ACTIVE_HIGH false
 
 
+/*
+  Morse Decoder Class
+    - decode
+    - setspeed
+    - read
+    - available
+*/
 class MorseDecoder
 {
   public:
-    MorseDecoder(int, boolean, boolean);
+    MorseDecoder(MorseIn *);
     void decode();
     void setspeed(int);
     char read();
     boolean available();
-    int AudioThreshold;
-    long debounceDelay;     // the debounce time. Keep well below dotTime!!
-    boolean morseSignalState;  
+    char decodedMorseChar;  // The last decoded Morse character
   private:
-    int morseInPin;         // The Morse input pin
-    int audioSignal;
+    MorseIn *MorseIn_p;         // Pointer to the input handler
+    boolean lastKeyState;
     int morseTablePointer;
-    int wpm;                // Word-per-minute speed
-    long dotTime;           // morse dot time length in ms
-    long dashTime;
-    long wordSpace;
     boolean morseSpace;     // Flag to prevent multiple received spaces
     boolean gotLastSig;     // Flag that the last received morse signal is decoded as dot or dash
-    boolean morseKeyer;
-    boolean lastKeyerState;
-    boolean morseAudio;
-    boolean activeLow;
     long markTime;          // timers for mark and space in morse signal
     long spaceTime;         // E=MC^2 ;p
-    long lastDebounceTime;  // the last time the input pin was toggled
-    long currentTime;       // The current (signed) time
-    char decodedMorseChar;  // The last decoded Morse character
+  protected:
+    int wpm;                // Word-per-minute speed
+    long dotTime;           // morse element times in ms
+    long dashTime;
+    long wordSpace;
 };
 
 
+/*
+  MorseEncoder Class:
+    - encode
+    - setspeed
+    - write
+    - available
+    - setmillis
+*/
 class MorseEncoder
 {
   public:
@@ -58,15 +65,16 @@ class MorseEncoder
     MorseOut *MorseIO_p;     // Pointer to output handler
     char encodeMorseChar;    // ASCII character to encode
     boolean sendingMorse;    // Flag indicating sending is in process
-    int wpm;                 // Word-per-minute speed
-    long dotTime;            // morse dot time length in ms
-    long dashTime;
-    long wordSpace;
     int morseSignalPos;
     int sendingMorseSignalNr;
     long sendMorseTimer;
     long currentTime;
     unsigned long (*millis)();
+  protected:
+    int wpm;                 // Word-per-minute speed
+    long dotTime;            // morse element times in ms
+    long dashTime;
+    long wordSpace;
 };
 
 #endif

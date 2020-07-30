@@ -25,9 +25,10 @@ const byte morseSpkrPin = 11;
 // Configure I/O
 MorseSpeaker Spkr(morseSpkrPin);
 MorseOutTone Mout(&Spkr);
+MorseInKey Min(morseInPin, ACTIVE_LOW, &Spkr);
 
 // Instantiate Morse encoder and decoder
-MorseDecoder MorseInput(morseInPin, MORSE_KEYER, MORSE_ACTIVE_LOW);
+MorseDecoder MorseInput(&Min);
 MorseEncoder MorseOutput(&Mout);
 
 
@@ -43,6 +44,7 @@ void setup()
 
   // Enable encode and decode tone output
   Spkr.outputToneOn = true;
+  Spkr.sideToneOn = true;
 }
 
 

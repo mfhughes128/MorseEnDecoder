@@ -88,64 +88,40 @@ const char morseTable[] PROGMEM =
     - read
     - available
 */
-MorseDecoder::MorseDecoder(int decodePin, boolean listenAudio, boolean morsePullup)
+MorseDecoder::MorseDecoder(MorseIn *t_MorseIn_p)
 {
-  morseInPin = decodePin;
-  morseAudio = listenAudio;
-  activeLow = morsePullup;
+  MorseIn_p = t_MorseIn_p;
 
-  if (morseAudio == false) {
-    pinMode(morseInPin, INPUT);
-    if (activeLow) {
-      digitalWrite (morseInPin, HIGH);
-    }
-  }
-
-  // Some initial values  
-  wpm = 13;
-  AudioThreshold = 700;
-  debounceDelay = 20;
-  dotTime = 1200 / wpm;       // morse dot time length in ms
+  // Some initial values
+  wpm = 13;                   // morse rate in words per minute
+  dotTime = 1200 / wpm;       // morse element timings in ms
   dashTime = 3 * 1200 / wpm;
   wordSpace = 7 * 1200 / wpm;
 
   morseTablePointer = 0;
  
-  morseKeyer = LOW;
-  morseSignalState = LOW;
-  lastKeyerState = LOW;
-
   gotLastSig = true;
   morseSpace = true;
   decodedMorseChar = '\0';
   
-  lastDebounceTime = 0;
+  lastKeyState = LOW;
   markTime = 0;
   spaceTime = 0;
 }
 
-
 void MorseDecoder::setspeed(int value)
 {
   wpm = value;
-  if (wpm <= 0) {
-    wpm = 1;
-  }
+  if (wpm <= 0) wpm = 5;
   dotTime = 1200 / wpm;
   dashTime = 3 * 1200 / wpm;
   wordSpace = 7 * 1200 / wpm;
 }
 
-
 boolean MorseDecoder::available()
 {
-  if (decodedMorseChar) {
-    return true;
-  } else {
-    return false;
-  }
+  if (decodedMorseChar) return true; else return false;
 }
-
 
 char MorseDecoder::read()
 {
@@ -154,109 +130,64 @@ char MorseDecoder::read()
   return temp;
 }
 
-
 void MorseDecoder::decode()
 {
-  currentTime = millis();
+  long currentTime = millis();
   
-  // Read Morse signals
-  if (morseAudio == false) {
-    // Read the Morse key input (digital)
-    morseKeyer = digitalRead(morseInPin);
-    if (activeLow) morseKeyer = !morseKeyer;
+  // Read Morse signal & update mark and space timers
+  boolean morseSignalState = MorseIn_p->read(currentTime);
 
-    // If the switch changed, due to noise or pressing, reset the debounce timer
-    if (morseKeyer != lastKeyerState) lastDebounceTime = currentTime;
-  
-    // debounce the morse keyer
-    if ((currentTime - lastDebounceTime) > debounceDelay)
-    {
-      // whatever the reading is at, it's been there for longer
-      // than the debounce delay, so take it as the actual current state:
-      morseSignalState = morseKeyer;
-      
-      // differentiante mark and space times
-      if (morseSignalState) markTime = lastDebounceTime; 
-      else spaceTime = lastDebounceTime;
-    }
-  } else {
-    // Read Morse audio signal
-    audioSignal = analogRead(morseInPin);
-    if (audioSignal > AudioThreshold)
-    {
-      // If this is a new morse signal, reset morse signal timer
-      if (currentTime - lastDebounceTime > dotTime/2)
-      {
-        markTime = currentTime;
-        morseSignalState = true; // there is currently a Morse signal
-      }
-      lastDebounceTime = currentTime;
-    } else {
-      // if this is a new pause, reset space time
-      if (currentTime - lastDebounceTime > dotTime/2 && morseSignalState == true)
-      {
-        spaceTime = lastDebounceTime; // not too far off from last received audio
-        morseSignalState = false;     // No more signal
-      }
-    }
+  if ((lastKeyState == LOW) && (morseSignalState == HIGH)) {
+    markTime = currentTime;
+  } else if ((lastKeyState == HIGH) && (morseSignalState == LOW)) {
+    spaceTime = currentTime;
   }
+  lastKeyState = morseSignalState;
   
   // Decode morse code
-  if (!morseSignalState)
-  {
-    if (!gotLastSig)
-    {
-      if (morseTablePointer < morseTableLength/2-1)
-      {
+  if (!morseSignalState) {
+    if (!gotLastSig) {
+      if (morseTablePointer < morseTableLength/2-1) {
         // if pause for more than half a dot, get what kind of signal pulse (dot/dash) received last
-        if (currentTime - spaceTime > dotTime/2)
-        {
+        if (currentTime - spaceTime > dotTime/2) {
           // if signal for more than 1/4 dotTime, take it as a morse pulse
-          if (spaceTime-markTime > dotTime/4)
-          {
+          if (spaceTime - markTime > dotTime/4) {
             morseTablePointer *= 2;  // go one level down the tree
             // if signal for less than half a dash, take it as a dot
-            if (spaceTime-markTime < dashTime/2)
-            {
-               morseTablePointer++; // point to node for a dot
-               gotLastSig = true;
+            if (spaceTime - markTime < dashTime/2) {
+              morseTablePointer++; // point to node for a dot
+              gotLastSig = true;
             }
             // else if signal for between half a dash and a dash + one dot (1.33 dashes), take as a dash
-            else if (spaceTime-markTime < dashTime + dotTime)
-            {
-               morseTablePointer += 2; // point to node for a dash
-               gotLastSig = true;
+            else if (spaceTime - markTime < dashTime + dotTime) {
+              morseTablePointer += 2; // point to node for a dash
+              gotLastSig = true;
             }
           }
         }
       } else { // error if too many pulses in one morse character
-        //Serial.println("<ERROR: unrecognized signal!>");
         decodedMorseChar = '#'; // error mark
         gotLastSig = true;
         morseTablePointer = 0;
       }
     }
+    
     // Write out the character if pause is longer than 2/3 dash time (2 dots) and a character received
-    if ((currentTime-spaceTime >= (dotTime*2)) && (morseTablePointer > 0))
-    {
+    if ((currentTime-spaceTime >= (dotTime*2)) && (morseTablePointer > 0)) {
       decodedMorseChar = pgm_read_byte_near(morseTable + morseTablePointer);
       morseTablePointer = 0;
     }
+    
     // Write a space if pause is longer than 2/3rd wordspace
-    if (currentTime-spaceTime > (wordSpace*2/3) && morseSpace == false)
-    {
+    if (currentTime-spaceTime > (wordSpace*2/3) && morseSpace == false) {
       decodedMorseChar = ' ';
       morseSpace = true ; // space written-flag
     }
-
   } else {
     // while there is a signal, reset some flags
     gotLastSig = false;
     morseSpace = false;
   }
-  
-  // Save the morse keyer state for next round
-  lastKeyerState = morseKeyer;
 }
 
 

@@ -61,4 +61,52 @@ class MorseOutTone: public MorseOut
     MorseSpeaker *Speaker_p;
 };
 
+
+/*
+  Morse Input Classes Morse
+    MorseIN - Base class for all decoder input configurations
+    MorseInKey - Digital input from a pin with sidetone
+    MorseInTone - Analog tone input (Note: must be assigned an analog pin)
+*/
+class MorseIn
+{
+  public:
+    MorseIn(void);
+    virtual boolean read(long);
+};
+
+class MorseInKey: public MorseIn
+{
+  public:
+    MorseInKey(int, boolean, MorseSpeaker *);
+    boolean read(long);
+  private:
+    int pinIn;
+    boolean pinSense;
+    MorseSpeaker *Speaker_p;
+    
+    long debounceDelay;
+
+    boolean lastKeyIn;
+    long lastDebounceTime;
+    boolean debouncedKey;
+};
+
+class MorseInTone: public MorseIn
+{
+  public:
+    MorseInTone(int);
+    boolean read(long);
+  private:
+    int pinIn;
+    
+    int audioThreshold;
+    long debounceDelay;
+    
+    boolean lastKeyIn;
+    long lastDebounceTime;
+    boolean debouncedKey;
+
+};
+
 #endif
